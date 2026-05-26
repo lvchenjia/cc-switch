@@ -44,7 +44,7 @@ export function useProviderCategory({
 
     // 从预设 ID 提取索引
     const match = selectedPresetId.match(
-      /^(claude|codex|gemini|opencode)-(\d+)$/,
+      /^(claude|codex|gemini|antigravity|opencode)-(\d+)$/,
     );
     if (!match) return;
 
@@ -65,7 +65,10 @@ export function useProviderCategory({
           preset.category || (preset.isOfficial ? "official" : undefined),
         );
       }
-    } else if (type === "gemini" && appId === "gemini") {
+    } else if (
+      (type === "gemini" || type === "antigravity") &&
+      (appId === "gemini" || appId === "antigravity")
+    ) {
       const preset = geminiProviderPresets[index];
       if (preset) {
         setCategory(preset.category || undefined);

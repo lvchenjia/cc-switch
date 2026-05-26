@@ -1770,6 +1770,7 @@ impl ProviderService {
             AppType::OpenCode => Self::extract_opencode_common_config(&provider.settings_config),
             AppType::OpenClaw => Self::extract_openclaw_common_config(&provider.settings_config),
             AppType::Hermes => Ok(String::new()), // Hermes doesn't use common config snippets
+            AppType::Antigravity => Ok(String::new()),
         }
     }
 
@@ -1786,6 +1787,7 @@ impl ProviderService {
             AppType::OpenCode => Self::extract_opencode_common_config(settings_config),
             AppType::OpenClaw => Self::extract_openclaw_common_config(settings_config),
             AppType::Hermes => Ok(String::new()), // Hermes doesn't use common config snippets
+            AppType::Antigravity => Ok(String::new()),
         }
     }
 
@@ -2174,6 +2176,9 @@ impl ProviderService {
                     ));
                 }
             }
+            AppType::Antigravity => {
+                // Antigravity settings are managed directly, not via provider settings validation
+            }
         }
 
         // Validate and clean UsageScript configuration (common for all app types)
@@ -2379,6 +2384,13 @@ impl ProviderService {
                     .to_string();
 
                 Ok((api_key, base_url))
+            }
+            AppType::Antigravity => {
+                Err(AppError::localized(
+                    "antigravity.credentials.unsupported",
+                    "Antigravity 不支持提取常规供应商凭证",
+                    "Antigravity does not support extracting generic provider credentials",
+                ))
             }
         }
     }

@@ -266,7 +266,7 @@ impl StreamCheckService {
                 )
                 .await
             }
-            AppType::Gemini => {
+            AppType::Gemini | AppType::Antigravity => {
                 Self::check_gemini_stream(
                     &client,
                     &base_url,
@@ -1386,6 +1386,10 @@ impl StreamCheckService {
                 // OpenClaw/Hermes use models array in settings_config
                 // Try to extract first model from the models array
                 Self::extract_openclaw_model(provider).unwrap_or_else(|| "gpt-4o".to_string())
+            }
+            AppType::Antigravity => {
+                Self::extract_env_model(provider, "GEMINI_MODEL")
+                    .unwrap_or_else(|| config.gemini_model.clone())
             }
         }
     }

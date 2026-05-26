@@ -20,7 +20,8 @@ export function useSubscriptionQuota(
   return useQuery({
     queryKey: subscriptionKeys.quota(appId),
     queryFn: () => subscriptionApi.getQuota(appId),
-    enabled: enabled && ["claude", "codex", "gemini"].includes(appId),
+    enabled:
+      enabled && ["claude", "codex", "gemini", "antigravity"].includes(appId),
     refetchInterval: autoQuery ? REFETCH_INTERVAL : false,
     refetchIntervalInBackground: autoQuery,
     refetchOnWindowFocus: autoQuery,

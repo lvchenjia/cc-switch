@@ -295,7 +295,7 @@ function ProviderFormFull({
         ? JSON.stringify(initialData.settingsConfig, null, 2)
         : appId === "codex"
           ? CODEX_DEFAULT_CONFIG
-          : appId === "gemini"
+          : appId === "gemini" || appId === "antigravity"
             ? GEMINI_DEFAULT_CONFIG
             : appId === "opencode"
               ? OPENCODE_DEFAULT_CONFIG
@@ -533,7 +533,7 @@ function ProviderFormFull({
         id: `codex-${index}`,
         preset,
       }));
-    } else if (appId === "gemini") {
+    } else if (appId === "gemini" || appId === "antigravity") {
       return geminiProviderPresets.map<PresetEntry>((preset, index) => ({
         id: `gemini-${index}`,
         preset,
@@ -628,7 +628,8 @@ function ProviderFormFull({
     envStringToObj,
     envObjToString,
   } = useGeminiConfigState({
-    initialData: appId === "gemini" ? initialData : undefined,
+    initialData:
+      appId === "gemini" || appId === "antigravity" ? initialData : undefined,
   });
 
   const updateGeminiEnvField = useCallback(
@@ -691,9 +692,12 @@ function ProviderFormFull({
     onEnvChange: handleGeminiEnvChange,
     envStringToObj,
     envObjToString,
-    initialData: appId === "gemini" ? initialData : undefined,
+    initialData:
+      appId === "gemini" || appId === "antigravity" ? initialData : undefined,
     initialEnabled:
-      appId === "gemini" ? initialData?.meta?.commonConfigEnabled : undefined,
+      appId === "gemini" || appId === "antigravity"
+        ? initialData?.meta?.commonConfigEnabled
+        : undefined,
     selectedPresetId: selectedPresetId ?? undefined,
   });
 
@@ -1066,7 +1070,7 @@ function ProviderFormFull({
             }),
           );
         }
-      } else if (appId === "gemini") {
+      } else if (appId === "gemini" || appId === "antigravity") {
         if (!geminiBaseUrl.trim()) {
           issues.push(
             t("providerForm.endpointRequired", {
@@ -1121,7 +1125,7 @@ function ProviderFormFull({
       } catch (err) {
         settingsConfig = values.settingsConfig.trim();
       }
-    } else if (appId === "gemini") {
+    } else if (appId === "gemini" || appId === "antigravity") {
       try {
         const envObj = envStringToObj(geminiEnv);
         const configObj = geminiConfig.trim() ? JSON.parse(geminiConfig) : {};
@@ -1263,7 +1267,7 @@ function ProviderFormFull({
           ? useCommonConfig
           : appId === "codex"
             ? useCodexCommonConfigFlag
-            : appId === "gemini"
+            : appId === "gemini" || appId === "antigravity"
               ? useGeminiCommonConfigFlag
               : undefined,
       endpointAutoSelect,
@@ -1431,7 +1435,7 @@ function ProviderFormFull({
             "openai_responses",
         );
       }
-      if (appId === "gemini") {
+      if (appId === "gemini" || appId === "antigravity") {
         resetGeminiConfig({}, {});
       }
       if (appId === "opencode") {
@@ -1482,7 +1486,7 @@ function ProviderFormFull({
       return;
     }
 
-    if (appId === "gemini") {
+    if (appId === "gemini" || appId === "antigravity") {
       const preset = entry.preset as GeminiProviderPreset;
       const env = (preset.settingsConfig as any)?.env ?? {};
       const config = (preset.settingsConfig as any)?.config ?? {};
@@ -1944,7 +1948,7 @@ function ProviderFormFull({
             />
           )}
 
-          {appId === "gemini" && (
+          {(appId === "gemini" || appId === "antigravity") && (
             <GeminiFormFields
               providerId={providerId}
               shouldShowApiKey={shouldShowApiKey(
@@ -2082,7 +2086,7 @@ function ProviderFormFull({
               />
               {settingsConfigErrorField}
             </>
-          ) : appId === "gemini" ? (
+          ) : appId === "gemini" || appId === "antigravity" ? (
             <>
               <GeminiConfigEditor
                 envValue={geminiEnv}

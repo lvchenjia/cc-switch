@@ -8,6 +8,7 @@ import ClaudeSvg from "@/icons/extracted/claude.svg?url";
 import OpenAISvg from "@/icons/extracted/openai.svg?url";
 import GeminiSvg from "@/icons/extracted/gemini.svg?url";
 import OpenClawSvg from "@/icons/extracted/claw.svg?url";
+import AntigravityPng from "@/icons/extracted/antigravity.png";
 
 export function ClaudeIcon({ size = 16, className = "" }: IconProps) {
   return (
@@ -43,6 +44,19 @@ export function GeminiIcon({ size = 16, className = "" }: IconProps) {
       height={size}
       className={className}
       alt="Gemini"
+      loading="lazy"
+    />
+  );
+}
+
+export function AntigravityIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <img
+      src={AntigravityPng}
+      width={size}
+      height={size}
+      className={className}
+      alt="Antigravity"
       loading="lazy"
     />
   );

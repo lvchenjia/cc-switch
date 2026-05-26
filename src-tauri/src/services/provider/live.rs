@@ -349,7 +349,7 @@ fn settings_contain_common_config(app_type: &AppType, settings: &Value, snippet:
             }
             _ => false,
         },
-        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => false,
+        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop | AppType::Antigravity => false,
     }
 }
 
@@ -419,7 +419,7 @@ pub(crate) fn remove_common_config_from_settings(
             }
             Ok(result)
         }
-        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => {
+        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop | AppType::Antigravity => {
             Ok(settings.clone())
         }
     }
@@ -476,7 +476,7 @@ fn apply_common_config_to_settings(
             }
             Ok(result)
         }
-        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => {
+        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop | AppType::Antigravity => {
             Ok(settings.clone())
         }
     }
@@ -842,6 +842,29 @@ pub(crate) fn write_live_snapshot(app_type: &AppType, provider: &Provider) -> Re
             crate::hermes_config::set_provider(&provider.id, provider.settings_config.clone())?;
             log::debug!("Hermes provider '{}' written to live config", provider.id);
         }
+        AppType::Antigravity => {
+            use crate::antigravity_config::{
+                write_antigravity_settings, AntigravitySettings,
+            };
+
+            let obj = provider
+                .settings_config
+                .as_object()
+                .ok_or_else(|| AppError::Config("Antigravity 供应商配置必须是 JSON 对象".to_string()))?;
+
+            let config_val = obj
+                .get("config")
+                .unwrap_or(&serde_json::Value::Null);
+
+            let settings: AntigravitySettings = if config_val.is_null() {
+                AntigravitySettings::default()
+            } else {
+                serde_json::from_value(config_val.clone())
+                    .map_err(|e| AppError::Config(format!("反序列化 Antigravity 设置失败: {}", e)))?
+            };
+
+            write_antigravity_settings(&settings)?;
+        }
     }
     Ok(())
 }
@@ -1055,6 +1078,21 @@ pub fn read_live_settings(app_type: AppType) -> Result<Value, AppError> {
             let config = crate::hermes_config::yaml_to_json(&yaml_config)?;
             Ok(config)
         }
+        AppType::Antigravity => {
+            let path = crate::antigravity_config::get_antigravity_settings_path();
+            if !path.exists() {
+                return Err(AppError::localized(
+                    "antigravity.live.missing",
+                    "Antigravity CLI 配置文件不存在",
+                    "Antigravity settings file is missing",
+                ));
+            }
+            let settings = crate::antigravity_config::read_antigravity_settings()?;
+            Ok(json!({
+                "env": {},
+                "config": serde_json::to_value(settings).map_err(|e| AppError::json(&path, e))?
+            }))
+        }
     }
 }
 
@@ -1141,6 +1179,24 @@ pub fn import_default_config(state: &AppState, app_type: AppType) -> Result<bool
             // Return complete structure: { "env": {...}, "config": {...} }
             json!({
                 "env": env_obj,
+                "config": config_obj
+            })
+        }
+        AppType::Antigravity => {
+            use crate::antigravity_config::{
+                get_antigravity_settings_path, read_antigravity_settings,
+            };
+
+            let settings_path = get_antigravity_settings_path();
+            let config_obj = if settings_path.exists() {
+                let settings = read_antigravity_settings()?;
+                serde_json::to_value(settings).map_err(|e| AppError::json(&settings_path, e))?
+            } else {
+                json!({})
+            };
+
+            json!({
+                "env": {},
                 "config": config_obj
             })
         }

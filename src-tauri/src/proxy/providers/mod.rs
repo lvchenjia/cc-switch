@@ -162,11 +162,10 @@ impl ProviderType {
                 ProviderType::Claude
             }
             AppType::Codex => ProviderType::Codex,
-            AppType::Gemini => {
-                // 检测是否为 CLI 模式（OAuth）
+            AppType::Gemini | AppType::Antigravity => {
                 let adapter = GeminiAdapter::new();
-                if let Some(auth) = adapter.extract_auth(provider) {
-                    let key = &auth.api_key;
+                let key_opt = adapter.extract_auth(provider).map(|a| a.api_key);
+                if let Some(key) = key_opt {
                     // OAuth access_token 以 ya29. 开头
                     if key.starts_with("ya29.") {
                         return ProviderType::GeminiCli;
@@ -231,7 +230,7 @@ pub fn get_adapter(app_type: &AppType) -> Box<dyn ProviderAdapter> {
     match app_type {
         AppType::Claude | AppType::ClaudeDesktop => Box::new(ClaudeAdapter::new()),
         AppType::Codex => Box::new(CodexAdapter::new()),
-        AppType::Gemini => Box::new(GeminiAdapter::new()),
+        AppType::Gemini | AppType::Antigravity => Box::new(GeminiAdapter::new()),
         AppType::OpenCode | AppType::OpenClaw | AppType::Hermes => {
             // These apps don't support proxy, fallback to Codex adapter
             Box::new(CodexAdapter::new())

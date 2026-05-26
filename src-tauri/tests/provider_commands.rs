@@ -208,6 +208,7 @@ command = "say"
                 gemini: false,
                 opencode: false,
                 hermes: false,
+                antigravity: false,
             },
             description: None,
             homepage: None,

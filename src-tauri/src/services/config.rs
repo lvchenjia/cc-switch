@@ -136,6 +136,9 @@ impl ConfigService {
             AppType::Hermes => {
                 // Hermes uses additive mode, no live sync needed
             }
+            AppType::Antigravity => {
+                // Antigravity does not support custom provider setups
+            }
         }
 
         Ok(())

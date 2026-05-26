@@ -188,7 +188,7 @@ export const getApiKeyFromConfig = (
     if (!env) return "";
 
     // Gemini API Key
-    if (appType === "gemini") {
+    if (appType === "gemini" || appType === "antigravity") {
       const geminiKey = env.GEMINI_API_KEY;
       return typeof geminiKey === "string" ? geminiKey : "";
     }
@@ -274,7 +274,7 @@ export const hasApiKeyField = (
 
     const env = config?.env ?? {};
 
-    if (appType === "gemini") {
+    if (appType === "gemini" || appType === "antigravity") {
       return Object.prototype.hasOwnProperty.call(env, "GEMINI_API_KEY");
     }
 
@@ -318,7 +318,7 @@ export const setApiKeyInConfig = (
     const env = config.env as Record<string, any>;
 
     // Gemini API Key
-    if (appType === "gemini") {
+    if (appType === "gemini" || appType === "antigravity") {
       if ("GEMINI_API_KEY" in env) {
         env.GEMINI_API_KEY = apiKey;
       } else if (createIfMissing) {

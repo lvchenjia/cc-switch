@@ -11,6 +11,7 @@
 //! - `opencode` - OpenCode MCP 同步和导入（含 local/remote 格式转换）
 //! - `hermes` - Hermes MCP 同步和导入
 
+mod antigravity;
 mod claude;
 mod codex;
 mod gemini;
@@ -19,6 +20,11 @@ mod opencode;
 mod validation;
 
 // 重新导出公共 API
+#[allow(unused_imports)]
+pub use antigravity::{
+    import_from_antigravity, remove_server_from_antigravity, sync_enabled_to_antigravity,
+    sync_single_server_to_antigravity,
+};
 pub use claude::{
     import_from_claude, remove_server_from_claude, sync_enabled_to_claude,
     sync_single_server_to_claude,

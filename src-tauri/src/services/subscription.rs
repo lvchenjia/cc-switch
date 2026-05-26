@@ -749,32 +749,38 @@ type GeminiCredentials = (
     Option<String>,
 );
 
-/// 读取 Gemini OAuth 凭据
+/// 读取 Gemini / Antigravity OAuth 凭据
 ///
 /// 按优先级尝试以下来源：
-/// 1. macOS Keychain (service: "gemini-cli-oauth", account: "main-account")
-/// 2. 凭据文件 ~/.gemini/oauth_creds.json（遗留格式）
+/// 1. macOS Keychain (service: "gemini-cli-oauth" / "antigravity-cli-oauth", account: "main-account")
+/// 2. 凭据文件 ~/.gemini/oauth_creds.json / ~/.gemini/antigravity-cli/oauth_creds.json（遗留格式）
 ///
 /// 仅 OAuth 认证模式（`oauth-personal`）有效；API key 模式无法查询官方用量。
-fn read_gemini_credentials() -> GeminiCredentials {
+fn read_gemini_credentials(tool: &str) -> GeminiCredentials {
     #[cfg(target_os = "macos")]
     {
-        if let Some(result) = read_gemini_credentials_from_keychain() {
+        if let Some(result) = read_gemini_credentials_from_keychain(tool) {
             return result;
         }
     }
 
-    read_gemini_credentials_from_file()
+    read_gemini_credentials_from_file(tool)
 }
 
 /// 从 macOS Keychain 读取 Gemini 凭据
 #[cfg(target_os = "macos")]
-fn read_gemini_credentials_from_keychain() -> Option<GeminiCredentials> {
+fn read_gemini_credentials_from_keychain(tool: &str) -> Option<GeminiCredentials> {
+    let service = if tool == "antigravity" {
+        "antigravity-cli-oauth"
+    } else {
+        "gemini-cli-oauth"
+    };
+
     let output = std::process::Command::new("security")
         .args([
             "find-generic-password",
             "-s",
-            "gemini-cli-oauth",
+            service,
             "-a",
             "main-account",
             "-w",
@@ -857,9 +863,13 @@ fn parse_gemini_keychain_json(content: &str) -> GeminiCredentials {
     }
 }
 
-/// 从文件读取 Gemini 凭据
-fn read_gemini_credentials_from_file() -> GeminiCredentials {
-    let cred_path = crate::gemini_config::get_gemini_dir().join("oauth_creds.json");
+/// 从文件读取 Gemini / Antigravity 凭据
+fn read_gemini_credentials_from_file(tool: &str) -> GeminiCredentials {
+    let cred_path = if tool == "antigravity" {
+        crate::antigravity_config::get_antigravity_dir().join("oauth_creds.json")
+    } else {
+        crate::gemini_config::get_gemini_dir().join("oauth_creds.json")
+    };
     if !cred_path.exists() {
         return (None, None, CredentialStatus::NotFound, None);
     }
@@ -1273,13 +1283,13 @@ pub async fn get_subscription_quota(tool: &str) -> Result<SubscriptionQuota, Str
                 }
             }
         }
-        "gemini" => {
-            let (token, refresh_token, status, message) = read_gemini_credentials();
+        "gemini" | "antigravity" => {
+            let (token, refresh_token, status, message) = read_gemini_credentials(tool);
 
             match status {
-                CredentialStatus::NotFound => Ok(SubscriptionQuota::not_found("gemini")),
+                CredentialStatus::NotFound => Ok(SubscriptionQuota::not_found(tool)),
                 CredentialStatus::ParseError => Ok(SubscriptionQuota::error(
-                    "gemini",
+                    tool,
                     CredentialStatus::ParseError,
                     message.unwrap_or_else(|| "Failed to parse credentials".to_string()),
                 )),
@@ -1298,7 +1308,7 @@ pub async fn get_subscription_quota(tool: &str) -> Result<SubscriptionQuota, Str
                         }
                     }
                     Ok(SubscriptionQuota::error(
-                        "gemini",
+                        tool,
                         CredentialStatus::Expired,
                         message.unwrap_or_else(|| "Gemini OAuth token has expired".to_string()),
                     ))

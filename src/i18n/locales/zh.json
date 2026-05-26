@@ -720,7 +720,8 @@
     "gemini": "Gemini",
     "opencode": "OpenCode",
     "openclaw": "OpenClaw",
-    "hermes": "Hermes"
+    "hermes": "Hermes",
+    "antigravity": "Antigravity"
   },
   "sessionManager": {
     "title": "会话管理",
@@ -1412,7 +1413,8 @@
         "gemini": "Gemini",
         "opencode": "OpenCode",
         "openclaw": "OpenClaw",
-        "hermes": "Hermes"
+        "hermes": "Hermes",
+        "antigravity": "Antigravity"
       }
     },
     "userLevelPath": "用户级 MCP 配置路径",

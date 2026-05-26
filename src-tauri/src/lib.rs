@@ -1,3 +1,4 @@
+mod antigravity_config;
 mod app_config;
 mod app_store;
 mod auto_launch;
@@ -533,6 +534,10 @@ pub fn run() {
                 }
                 Ok(_) => {}
                 Err(e) => log::warn!("✗ Failed to seed official providers: {e}"),
+            }
+
+            if let Err(e) = app_state.db.ensure_official_seed_by_id("antigravity-official", app_config::AppType::Antigravity) {
+                log::warn!("✗ Failed to ensure antigravity-official seed: {e}");
             }
 
             // 老用户 / 已确认的路径由 `fresh_install_at_startup` 自行拦截，这里不做写入。
@@ -1293,6 +1298,11 @@ pub fn run() {
             commands::set_hermes_memory,
             commands::get_hermes_memory_limits,
             commands::set_hermes_memory_enabled,
+            // Antigravity specific
+            commands::get_antigravity_settings,
+            commands::set_antigravity_settings,
+            commands::get_antigravity_mcp_config,
+            commands::set_antigravity_mcp_config,
             // Global upstream proxy
             commands::get_global_proxy_url,
             commands::set_global_proxy_url,

@@ -536,6 +536,9 @@ impl SkillService {
                     return Ok(custom.join("skills"));
                 }
             }
+            // Antigravity uses ~/.gemini/antigravity-cli/skills/ by default.
+            // No override setting is exposed yet; a future PR can add one.
+            AppType::Antigravity => {}
         }
 
         // 默认路径：回退到用户主目录下的标准位置
@@ -553,6 +556,9 @@ impl SkillService {
             AppType::OpenCode => home.join(".config").join("opencode").join("skills"),
             AppType::OpenClaw => home.join(".openclaw").join("skills"),
             AppType::Hermes => crate::hermes_config::get_hermes_dir().join("skills"),
+            // Antigravity CLI stores skills under ~/.gemini/antigravity-cli/skills/
+            // This is intentionally separate from Gemini CLI's ~/.gemini/skills/
+            AppType::Antigravity => crate::antigravity_config::get_antigravity_skills_dir(),
         })
     }
 

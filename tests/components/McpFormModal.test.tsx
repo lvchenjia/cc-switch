@@ -390,6 +390,10 @@ type = "stdio"
       claude: true,
       codex: false,
       gemini: false,
+      opencode: false,
+      openclaw: false,
+      hermes: false,
+      antigravity: false,
     });
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onSave).toHaveBeenCalledWith();
@@ -435,6 +439,7 @@ type = "stdio"
       opencode: false,
       openclaw: false,
       hermes: false,
+      antigravity: false,
     });
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(toastErrorMock).not.toHaveBeenCalled();

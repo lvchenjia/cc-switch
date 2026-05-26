@@ -437,6 +437,12 @@ impl ProxyService {
             .await
             .map(|c| c.enabled)
             .unwrap_or(false);
+        let antigravity_enabled = self
+            .db
+            .get_proxy_config_for_app("antigravity")
+            .await
+            .map(|c| c.enabled)
+            .unwrap_or(false);
         // OpenCode and OpenClaw don't support proxy features, always return false
         let opencode_enabled = false;
         let openclaw_enabled = false;
@@ -447,6 +453,7 @@ impl ProxyService {
             gemini: gemini_enabled,
             opencode: opencode_enabled,
             openclaw: openclaw_enabled,
+            antigravity: antigravity_enabled,
         })
     }
 
@@ -1173,6 +1180,13 @@ impl ProxyService {
                 self.write_gemini_live(&live_config)?;
                 log::info!("Gemini Live 配置已接管，代理地址: {proxy_url}");
             }
+            AppType::Antigravity => {
+                let mut live_config = self.read_antigravity_live()?;
+                live_config["base_url"] = json!(&proxy_url);
+                live_config["env_key"] = json!("ANTIGRAVITY_API_KEY");
+                self.write_antigravity_live(&live_config)?;
+                log::info!("Antigravity Live 配置已接管，代理地址: {proxy_url}");
+            }
             _ => return Err("该应用不支持代理功能".to_string()),
         }
 
@@ -1239,6 +1253,13 @@ impl ProxyService {
                     let _ = self.write_gemini_live(&live_config);
                 }
             }
+            AppType::Antigravity => {
+                if let Ok(mut live_config) = self.read_antigravity_live() {
+                    live_config["base_url"] = json!(&proxy_url);
+                    live_config["env_key"] = json!("ANTIGRAVITY_API_KEY");
+                    let _ = self.write_antigravity_live(&live_config);
+                }
+            }
             _ => {}
         }
 
@@ -1277,6 +1298,14 @@ impl ProxyService {
                     log::info!("Gemini Live 配置已恢复");
                 }
             }
+            AppType::Antigravity => {
+                if let Ok(Some(backup)) = self.db.get_live_backup("antigravity").await {
+                    let config: Value = serde_json::from_str(&backup.original_config)
+                        .map_err(|e| format!("解析 Antigravity 备份失败: {e}"))?;
+                    self.write_antigravity_live(&config)?;
+                    log::info!("Antigravity Live 配置已恢复");
+                }
+            }
             _ => {}
         }
 
@@ -1287,7 +1316,7 @@ impl ProxyService {
     async fn restore_live_configs(&self) -> Result<(), String> {
         let mut errors = Vec::new();
 
-        for app_type in [AppType::Claude, AppType::Codex, AppType::Gemini] {
+        for app_type in [AppType::Claude, AppType::Codex, AppType::Gemini, AppType::Antigravity] {
             if let Err(e) = self
                 .restore_live_config_for_app_with_fallback(&app_type)
                 .await
@@ -1366,6 +1395,7 @@ impl ProxyService {
             AppType::Claude => self.write_claude_live(config),
             AppType::Codex => self.write_codex_live(config),
             AppType::Gemini => self.write_gemini_live(config),
+            AppType::Antigravity => self.write_antigravity_live(config),
             _ => Err("该应用不支持代理功能".to_string()),
         }
     }
@@ -1382,6 +1412,10 @@ impl ProxyService {
             },
             AppType::Gemini => match self.read_gemini_live() {
                 Ok(config) => Self::is_gemini_live_taken_over(&config),
+                Err(_) => false,
+            },
+            AppType::Antigravity => match self.read_antigravity_live() {
+                Ok(config) => Self::is_antigravity_live_taken_over(&config),
                 Err(_) => false,
             },
             _ => false,
@@ -1424,6 +1458,7 @@ impl ProxyService {
             AppType::Claude => self.cleanup_claude_takeover_placeholders_in_live(),
             AppType::Codex => self.cleanup_codex_takeover_placeholders_in_live(),
             AppType::Gemini => self.cleanup_gemini_takeover_placeholders_in_live(),
+            AppType::Antigravity => self.cleanup_antigravity_takeover_placeholders_in_live(),
             _ => Ok(()),
         }
     }
@@ -1525,7 +1560,7 @@ impl ProxyService {
     /// 检查是否处于 Live 接管模式
     pub async fn is_takeover_active(&self) -> Result<bool, String> {
         let status = self.get_takeover_status().await?;
-        Ok(status.claude || status.codex || status.gemini)
+        Ok(status.claude || status.codex || status.gemini || status.antigravity)
     }
 
     /// 从异常退出中恢复（启动时调用）
@@ -1969,6 +2004,47 @@ impl ProxyService {
         let env_map = json_to_env(config).map_err(|e| format!("转换 Gemini 配置失败: {e}"))?;
         write_gemini_env_atomic(&env_map).map_err(|e| format!("写入 Gemini env 失败: {e}"))?;
         Ok(())
+    }
+
+    fn read_antigravity_live(&self) -> Result<Value, String> {
+        use crate::antigravity_config::read_antigravity_settings;
+        let settings = read_antigravity_settings().map_err(|e| format!("读取 Antigravity settings 失败: {e}"))?;
+        serde_json::to_value(settings).map_err(|e| format!("序列化 Antigravity settings 失败: {e}"))
+    }
+
+    fn write_antigravity_live(&self, config: &Value) -> Result<(), String> {
+        use crate::antigravity_config::{write_antigravity_settings, AntigravitySettings};
+        let settings: AntigravitySettings = serde_json::from_value(config.clone())
+            .map_err(|e| format!("反序列化 Antigravity settings 失败: {e}"))?;
+        write_antigravity_settings(&settings).map_err(|e| format!("写入 Antigravity settings 失败: {e}"))?;
+        Ok(())
+    }
+
+    fn cleanup_antigravity_takeover_placeholders_in_live(&self) -> Result<(), String> {
+        let mut config = self.read_antigravity_live()?;
+        if let Some(obj) = config.as_object_mut() {
+            if obj.get("env_key").and_then(|v| v.as_str()) == Some("ANTIGRAVITY_API_KEY") {
+                obj.remove("env_key");
+            }
+            if obj
+                .get("base_url")
+                .and_then(|v| v.as_str())
+                .map(Self::is_local_proxy_url)
+                .unwrap_or(false)
+            {
+                obj.remove("base_url");
+            }
+        }
+        self.write_antigravity_live(&config)?;
+        Ok(())
+    }
+
+    fn is_antigravity_live_taken_over(config: &Value) -> bool {
+        config
+            .get("base_url")
+            .and_then(|v| v.as_str())
+            .map(Self::is_local_proxy_url)
+            .unwrap_or(false)
     }
 
     // ==================== 原有方法 ====================

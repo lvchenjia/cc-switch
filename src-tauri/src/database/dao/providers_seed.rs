@@ -68,6 +68,15 @@ pub(crate) const OFFICIAL_SEEDS: &[OfficialProviderSeed] = &[
         // 空 env + 空 config 让用户走 Google OAuth
         settings_config_json: r#"{"env":{},"config":{}}"#,
     },
+    OfficialProviderSeed {
+        id: "antigravity-official",
+        app_type: AppType::Antigravity,
+        name: "Google Official",
+        website_url: "https://ai.google.dev/",
+        icon: "gemini",
+        icon_color: "#4285F4",
+        settings_config_json: r#"{"env":{},"config":{}}"#,
+    },
 ];
 
 /// 判断给定的 provider id 是否属于内置官方种子。

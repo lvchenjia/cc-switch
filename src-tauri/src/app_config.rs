@@ -17,6 +17,8 @@ pub struct McpApps {
     pub opencode: bool,
     #[serde(default)]
     pub hermes: bool,
+    #[serde(default)]
+    pub antigravity: bool,
 }
 
 impl McpApps {
@@ -30,6 +32,7 @@ impl McpApps {
             AppType::OpenClaw => false, // OpenClaw doesn't support MCP
             AppType::Hermes => self.hermes,
             AppType::ClaudeDesktop => false,
+            AppType::Antigravity => self.antigravity,
         }
     }
 
@@ -43,6 +46,7 @@ impl McpApps {
             AppType::OpenClaw => {} // OpenClaw doesn't support MCP, ignore
             AppType::Hermes => self.hermes = enabled,
             AppType::ClaudeDesktop => {} // Claude Desktop 3P provider config doesn't support MCP here
+            AppType::Antigravity => self.antigravity = enabled,
         }
     }
 
@@ -64,12 +68,20 @@ impl McpApps {
         if self.hermes {
             apps.push(AppType::Hermes);
         }
+        if self.antigravity {
+            apps.push(AppType::Antigravity);
+        }
         apps
     }
 
     /// 检查是否所有应用都未启用
     pub fn is_empty(&self) -> bool {
-        !self.claude && !self.codex && !self.gemini && !self.opencode && !self.hermes
+        !self.claude
+            && !self.codex
+            && !self.gemini
+            && !self.opencode
+            && !self.hermes
+            && !self.antigravity
     }
 }
 
@@ -86,6 +98,8 @@ pub struct SkillApps {
     pub opencode: bool,
     #[serde(default)]
     pub hermes: bool,
+    #[serde(default)]
+    pub antigravity: bool,
 }
 
 impl SkillApps {
@@ -99,6 +113,7 @@ impl SkillApps {
             AppType::Hermes => self.hermes,
             AppType::OpenClaw => false, // OpenClaw doesn't support Skills
             AppType::ClaudeDesktop => false,
+            AppType::Antigravity => self.antigravity,
         }
     }
 
@@ -112,6 +127,7 @@ impl SkillApps {
             AppType::Hermes => self.hermes = enabled,
             AppType::OpenClaw => {} // OpenClaw doesn't support Skills, ignore
             AppType::ClaudeDesktop => {} // Claude Desktop 3P profiles don't use CC Switch skill sync
+            AppType::Antigravity => self.antigravity = enabled,
         }
     }
 
@@ -133,12 +149,20 @@ impl SkillApps {
         if self.hermes {
             apps.push(AppType::Hermes);
         }
+        if self.antigravity {
+            apps.push(AppType::Antigravity);
+        }
         apps
     }
 
     /// 检查是否所有应用都未启用
     pub fn is_empty(&self) -> bool {
-        !self.claude && !self.codex && !self.gemini && !self.opencode && !self.hermes
+        !self.claude
+            && !self.codex
+            && !self.gemini
+            && !self.opencode
+            && !self.hermes
+            && !self.antigravity
     }
 
     /// 仅启用指定应用（其他应用设为禁用）
@@ -351,6 +375,12 @@ pub enum AppType {
     OpenCode,
     OpenClaw,
     Hermes,
+    #[serde(
+        rename = "antigravity",
+        alias = "antigravity-cli",
+        alias = "antigravity_cli"
+    )]
+    Antigravity,
 }
 
 impl AppType {
@@ -363,6 +393,7 @@ impl AppType {
             AppType::OpenCode => "opencode",
             AppType::OpenClaw => "openclaw",
             AppType::Hermes => "hermes",
+            AppType::Antigravity => "antigravity",
         }
     }
 
@@ -387,6 +418,7 @@ impl AppType {
             AppType::OpenCode,
             AppType::OpenClaw,
             AppType::Hermes,
+            AppType::Antigravity,
         ]
         .into_iter()
     }
@@ -405,10 +437,11 @@ impl FromStr for AppType {
             "opencode" => Ok(AppType::OpenCode),
             "openclaw" => Ok(AppType::OpenClaw),
             "hermes" => Ok(AppType::Hermes),
+            "antigravity" | "antigravity-cli" | "antigravity_cli" => Ok(AppType::Antigravity),
             other => Err(AppError::localized(
                 "unsupported_app",
-                format!("不支持的应用标识: '{other}'。可选值: claude, claude-desktop, codex, gemini, opencode, openclaw, hermes。"),
-                format!("Unsupported app id: '{other}'. Allowed: claude, claude-desktop, codex, gemini, opencode, openclaw, hermes."),
+                format!("不支持的应用标识: '{other}'。可选值: claude, claude-desktop, codex, gemini, opencode, openclaw, hermes, antigravity。"),
+                format!("Unsupported app id: '{other}'. Allowed: claude, claude-desktop, codex, gemini, opencode, openclaw, hermes, antigravity."),
             )),
         }
     }
@@ -434,6 +467,9 @@ pub struct CommonConfigSnippets {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hermes: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub antigravity: Option<String>,
 }
 
 impl CommonConfigSnippets {
@@ -447,6 +483,7 @@ impl CommonConfigSnippets {
             AppType::OpenCode => self.opencode.as_ref(),
             AppType::OpenClaw => self.openclaw.as_ref(),
             AppType::Hermes => self.hermes.as_ref(),
+            AppType::Antigravity => self.antigravity.as_ref(),
         }
     }
 
@@ -460,6 +497,7 @@ impl CommonConfigSnippets {
             AppType::OpenCode => self.opencode = snippet,
             AppType::OpenClaw => self.openclaw = snippet,
             AppType::Hermes => self.hermes = snippet,
+            AppType::Antigravity => self.antigravity = snippet,
         }
     }
 }
@@ -503,6 +541,7 @@ impl Default for MultiAppConfig {
         apps.insert("opencode".to_string(), ProviderManager::default());
         apps.insert("openclaw".to_string(), ProviderManager::default());
         apps.insert("hermes".to_string(), ProviderManager::default());
+        apps.insert("antigravity".to_string(), ProviderManager::default());
 
         Self {
             version: 2,
@@ -665,6 +704,9 @@ impl MultiAppConfig {
             AppType::OpenCode => &self.mcp.opencode,
             AppType::OpenClaw => &self.mcp.openclaw,
             AppType::Hermes => &self.mcp.hermes,
+            // Antigravity MCP is managed via its own mcp_config.json;
+            // the in-memory McpRoot uses the gemini slot as a proxy for now.
+            AppType::Antigravity => &self.mcp.gemini,
         }
     }
 
@@ -678,6 +720,8 @@ impl MultiAppConfig {
             AppType::OpenCode => &mut self.mcp.opencode,
             AppType::OpenClaw => &mut self.mcp.openclaw,
             AppType::Hermes => &mut self.mcp.hermes,
+            // See note in mcp_for
+            AppType::Antigravity => &mut self.mcp.gemini,
         }
     }
 
@@ -694,6 +738,7 @@ impl MultiAppConfig {
         Self::auto_import_prompt_if_exists(&mut config, AppType::OpenCode)?;
         Self::auto_import_prompt_if_exists(&mut config, AppType::OpenClaw)?;
         Self::auto_import_prompt_if_exists(&mut config, AppType::Hermes)?;
+        // Note: Antigravity does not use a separate prompt file;
 
         Ok(config)
     }
@@ -804,6 +849,7 @@ impl MultiAppConfig {
             AppType::OpenCode => &mut config.prompts.opencode.prompts,
             AppType::OpenClaw => &mut config.prompts.openclaw.prompts,
             AppType::Hermes => &mut config.prompts.hermes.prompts,
+            AppType::Antigravity => return Ok(false), // Antigravity does not use a prompt file
         };
 
         prompts.insert(id, prompt);
@@ -846,6 +892,7 @@ impl MultiAppConfig {
                 AppType::OpenCode => &self.mcp.opencode.servers,
                 AppType::OpenClaw => continue, // OpenClaw MCP is still in development, skip
                 AppType::Hermes => continue,   // Hermes didn't exist in v3.6.x, skip
+                AppType::Antigravity => continue, // Antigravity didn't exist in v3.6.x, skip
             };
 
             for (id, entry) in old_servers {

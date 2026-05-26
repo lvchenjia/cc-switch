@@ -4,7 +4,7 @@ pub mod terminal;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-use providers::{claude, codex, gemini, hermes, openclaw, opencode};
+use providers::{antigravity, claude, codex, gemini, hermes, openclaw, opencode};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -56,13 +56,14 @@ pub struct DeleteSessionOutcome {
 }
 
 pub fn scan_sessions() -> Vec<SessionMeta> {
-    let (r1, r2, r3, r4, r5, r6) = std::thread::scope(|s| {
+    let (r1, r2, r3, r4, r5, r6, r7) = std::thread::scope(|s| {
         let h1 = s.spawn(codex::scan_sessions);
         let h2 = s.spawn(claude::scan_sessions);
         let h3 = s.spawn(opencode::scan_sessions);
         let h4 = s.spawn(openclaw::scan_sessions);
         let h5 = s.spawn(gemini::scan_sessions);
         let h6 = s.spawn(hermes::scan_sessions);
+        let h7 = s.spawn(antigravity::scan_sessions);
         (
             h1.join().unwrap_or_default(),
             h2.join().unwrap_or_default(),
@@ -70,6 +71,7 @@ pub fn scan_sessions() -> Vec<SessionMeta> {
             h4.join().unwrap_or_default(),
             h5.join().unwrap_or_default(),
             h6.join().unwrap_or_default(),
+            h7.join().unwrap_or_default(),
         )
     });
 
@@ -80,6 +82,7 @@ pub fn scan_sessions() -> Vec<SessionMeta> {
     sessions.extend(r4);
     sessions.extend(r5);
     sessions.extend(r6);
+    sessions.extend(r7);
 
     sessions.sort_by(|a, b| {
         let a_ts = a.last_active_at.or(a.created_at).unwrap_or(0);
@@ -107,6 +110,7 @@ pub fn load_messages(provider_id: &str, source_path: &str) -> Result<Vec<Session
         "openclaw" => openclaw::load_messages(path),
         "gemini" => gemini::load_messages(path),
         "hermes" => hermes::load_messages(path),
+        "antigravity" => antigravity::load_messages(path),
         _ => Err(format!("Unsupported provider: {provider_id}")),
     }
 }
@@ -122,6 +126,9 @@ pub fn delete_session(
     }
     if provider_id == "hermes" && source_path.starts_with("sqlite:") {
         return hermes::delete_session_sqlite(session_id, source_path);
+    }
+    if provider_id == "antigravity" {
+        return antigravity::delete_session(Path::new(source_path), session_id);
     }
 
     let root = provider_root(provider_id)?;

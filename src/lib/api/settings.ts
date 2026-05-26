@@ -262,3 +262,38 @@ export const backupsApi = {
     await invoke("delete_db_backup", { filename });
   },
 };
+
+export interface AntigravitySettings {
+  model?: string;
+  colorScheme?: string;
+  trustedWorkspaces: string[];
+}
+
+export interface AntigravityMcpServer {
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+  timeout?: number;
+}
+
+export interface AntigravityMcpConfig {
+  mcpServers: Record<string, AntigravityMcpServer>;
+}
+
+export const antigravityApi = {
+  async getSettings(): Promise<AntigravitySettings> {
+    return await invoke("get_antigravity_settings");
+  },
+
+  async saveSettings(settings: AntigravitySettings): Promise<void> {
+    await invoke("set_antigravity_settings", { settings });
+  },
+
+  async getMcpConfig(): Promise<AntigravityMcpConfig> {
+    return await invoke("get_antigravity_mcp_config");
+  },
+
+  async saveMcpConfig(config: AntigravityMcpConfig): Promise<void> {
+    await invoke("set_antigravity_mcp_config", { config });
+  },
+};
